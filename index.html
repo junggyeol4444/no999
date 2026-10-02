@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="장편소설의 기획부터 집필, 검수, 출판까지 자동화하는 AI Novel Factory" />
+    <title>AI Novel Factory</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark"><i data-lucide="feather"></i></div><div><strong>Novel Factory</strong><span>AI STORY STUDIO</span></div></div>
+      <nav class="nav">
+        <p class="nav-label">WORKSPACE</p>
+        <a class="nav-item active" href="#dashboard"><i data-lucide="layout-dashboard"></i><span>대시보드</span></a>
+        <a class="nav-item" href="#projects"><i data-lucide="library-big"></i><span>작품</span><em>3</em></a>
+        <a class="nav-item" href="#references"><i data-lucide="scan-text"></i><span>참고소설 분석</span></a>
+        <a class="nav-item" href="#patterns"><i data-lucide="blocks"></i><span>패턴 라이브러리</span></a>
+        <p class="nav-label">PRODUCTION</p>
+        <a class="nav-item" href="#episodes"><i data-lucide="file-pen-line"></i><span>회차 관리</span></a>
+        <a class="nav-item" href="#memory"><i data-lucide="brain-circuit"></i><span>스토리 메모리</span></a>
+        <a class="nav-item" href="#quality"><i data-lucide="shield-check"></i><span>품질 검사</span><b>2</b></a>
+        <a class="nav-item" href="#publishing"><i data-lucide="send"></i><span>출판</span></a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="usage"><div class="usage-title"><span>이번 달 AI 사용량</span><strong>68%</strong></div><div class="meter"><span style="width:68%"></span></div><small>1,362,480 / 2,000,000 토큰</small></div>
+        <button class="nav-item settings"><i data-lucide="settings"></i><span>설정</span></button>
+        <div class="profile"><div class="avatar">작</div><div><strong>작가님</strong><span>Creator plan</span></div><i data-lucide="ellipsis"></i></div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <button class="icon-button menu-button" id="menuButton" aria-label="메뉴 열기"><i data-lucide="menu"></i></button>
+        <div class="top-title"><p>2026년 10월 2일 금요일</p><h1>좋은 아침이에요, 작가님.</h1></div>
+        <div class="top-actions"><button class="icon-button"><i data-lucide="search"></i></button><button class="icon-button notification"><i data-lucide="bell"></i><span></span></button><button class="primary-button" id="newProject"><i data-lucide="plus"></i>새 작품 만들기</button></div>
+      </header>
+
+      <section class="content" id="dashboard">
+        <div class="hero-grid">
+          <article class="card active-project">
+            <div class="section-heading"><div><span class="eyebrow"><i></i> ACTIVE PROJECT</span><h2>회귀한 CFO는 재벌을 꿈꾼다</h2><p>현대판타지 · 기업경영 · 회귀</p></div><button class="dots"><i data-lucide="ellipsis"></i></button></div>
+            <div class="project-progress"><div class="ring" style="--progress:38"><div><strong>38%</strong><span>진행률</span></div></div><div class="progress-info"><div class="episode-line"><strong>96</strong><span>/ 250화</span></div><div class="bar"><span style="width:38.4%"></span></div><p><i data-lucide="clock-3"></i> 최근 생성: 오늘 오전 3:18</p></div></div>
+            <div class="project-stats"><div><i data-lucide="text"></i><span>누적 글자 수<strong>482,560자</strong></span></div><div><i data-lucide="calendar-clock"></i><span>예상 완결일<strong>2027. 3. 8</strong></span></div><div><i data-lucide="zap"></i><span>평균 품질 점수<strong>94.2점</strong></span></div></div>
+            <button class="project-button">작품 스튜디오 열기 <i data-lucide="arrow-right"></i></button>
+          </article>
+
+          <article class="card pipeline-card">
+            <div class="section-heading"><div><span class="eyebrow">TODAY'S PIPELINE</span><h3>자동 집필 파이프라인</h3></div><span class="live"><i></i> 실행 중</span></div>
+            <div class="pipeline-list">
+              <div class="pipeline done"><div class="step-icon"><i data-lucide="check"></i></div><div><strong>Episode Planner</strong><span>97화 플롯 생성 완료</span></div><time>03:01</time></div>
+              <div class="pipeline done"><div class="step-icon"><i data-lucide="check"></i></div><div><strong>Context Retrieval</strong><span>관련 메모리 34개 검색</span></div><time>03:04</time></div>
+              <div class="pipeline running"><div class="step-icon"><i data-lucide="pen-line"></i></div><div><strong>Writer Engine</strong><span>Scene 4 / 6 집필 중</span><div class="mini-bar"><i></i></div></div><time>68%</time></div>
+              <div class="pipeline waiting"><div class="step-icon"><i data-lucide="shield-check"></i></div><div><strong>Quality Check</strong><span>연속성 · 논리 · 유사성 검사</span></div><time>대기</time></div>
+              <div class="pipeline waiting"><div class="step-icon"><i data-lucide="database"></i></div><div><strong>Memory Update</strong><span>신규 사실 추출 및 저장</span></div><time>대기</time></div>
+            </div>
+            <div class="next-run"><i data-lucide="timer"></i><span>다음 자동 실행<strong>18시간 42분 후</strong></span><button><i data-lucide="play"></i> 지금 실행</button></div>
+          </article>
+        </div>
+
+        <div class="metric-grid">
+          <article class="card metric"><div class="metric-icon purple"><i data-lucide="book-open-text"></i></div><div><span>등록된 참고소설</span><strong>12<small>편</small></strong><p class="positive"><i data-lucide="arrow-up-right"></i> 이번 달 +3</p></div></article>
+          <article class="card metric"><div class="metric-icon blue"><i data-lucide="network"></i></div><div><span>추출된 패턴</span><strong>184<small>개</small></strong><p>7개 장르에서 수집</p></div></article>
+          <article class="card metric"><div class="metric-icon amber"><i data-lucide="sparkles"></i></div><div><span>열린 복선</span><strong>23<small>개</small></strong><p class="warning"><i data-lucide="triangle-alert"></i> 3개 회수 임박</p></div></article>
+          <article class="card metric"><div class="metric-icon green"><i data-lucide="circle-check-big"></i></div><div><span>검수 통과율</span><strong>96.8<small>%</small></strong><p class="positive"><i data-lucide="trending-up"></i> 지난달 대비 2.1%</p></div></article>
+        </div>
+
+        <div class="lower-grid">
+          <article class="card references" id="references">
+            <div class="section-heading"><div><h3>참고소설 분석</h3><p>등록된 작품에서 구조적 특징만 추출합니다.</p></div><button class="text-button">전체 보기 <i data-lucide="chevron-right"></i></button></div>
+            <div class="reference-table">
+              <div class="reference-row header"><span>작품</span><span>참고 영역</span><span>분석 상태</span><span></span></div>
+              <div class="reference-row"><div class="book"><div class="cover cover-one">THE<br>ASCENT</div><span><strong>더 어센트</strong><small>현대판타지 · 320화</small></span></div><div class="tags"><span>전개 속도</span><span>회차 구조</span></div><div class="status complete"><i></i> 분석 완료</div><button class="dots"><i data-lucide="ellipsis"></i></button></div>
+              <div class="reference-row"><div class="book"><div class="cover cover-two">BLACK<br>LEDGER</div><span><strong>검은 장부</strong><small>기업물 · 218화</small></span></div><div class="tags"><span>복선</span><span>관계 변화</span></div><div class="status complete"><i></i> 분석 완료</div><button class="dots"><i data-lucide="ellipsis"></i></button></div>
+              <div class="reference-row"><div class="book"><div class="cover cover-three">THE<br>RETURN</div><span><strong>두 번째 기회</strong><small>회귀물 · 280화</small></span></div><div class="tags"><span>감정 곡선</span><span>클리프행어</span></div><div class="status analyzing"><i></i> 분석 중 72%</div><button class="dots"><i data-lucide="ellipsis"></i></button></div>
+            </div>
+            <button class="add-reference"><i data-lucide="upload-cloud"></i><span><strong>새 참고소설 추가</strong><small>TXT, EPUB, DOCX, PDF · 최대 50MB</small></span><i data-lucide="plus"></i></button>
+          </article>
+
+          <article class="card quality" id="quality">
+            <div class="section-heading"><div><h3>최근 품질 리포트</h3><p>96화 · 최종 원고 기준</p></div><div class="score">94<span>/100</span></div></div>
+            <div class="quality-list">
+              <div><span><i data-lucide="link-2"></i>설정 연속성</span><div class="quality-bar"><i style="width:100%"></i></div><strong>PASS</strong></div>
+              <div><span><i data-lucide="route"></i>사건 논리</span><div class="quality-bar"><i style="width:96%"></i></div><strong>96</strong></div>
+              <div><span><i data-lucide="fingerprint"></i>참고작 유사성</span><div class="quality-bar safe"><i style="width:12%"></i></div><strong class="safe-text">안전</strong></div>
+              <div><span><i data-lucide="quote"></i>문체 일관성</span><div class="quality-bar"><i style="width:92%"></i></div><strong>92</strong></div>
+              <div><span><i data-lucide="repeat-2"></i>반복 표현</span><div class="quality-bar caution"><i style="width:28%"></i></div><strong class="caution-text">2건</strong></div>
+            </div>
+            <div class="quality-note"><i data-lucide="wand-sparkles"></i><p><strong>AI 편집 제안</strong><span>Scene 3의 반복 표현 2건을 자연스럽게 수정했어요.</span></p><button>확인</button></div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="projectDialog">
+      <form method="dialog" class="modal">
+        <div class="modal-header"><div class="metric-icon purple"><i data-lucide="sparkles"></i></div><div><h2>새 작품 만들기</h2><p>아이디어를 입력하면 AI가 작품 설계를 시작합니다.</p></div><button value="cancel" class="icon-button"><i data-lucide="x"></i></button></div>
+        <label>작품 제목<input placeholder="아직 정하지 않았다면 비워두세요" /></label>
+        <div class="form-row"><label>장르<select><option>현대판타지</option><option>로맨스</option><option>판타지</option><option>무협</option></select></label><label>목표 회차<input type="number" value="250" /></label></div>
+        <label>핵심 소재<textarea placeholder="예: 30대 기업 인수 전문가의 회귀와 재벌 성장기"></textarea></label>
+        <div class="modal-actions"><button value="cancel" class="secondary-button">취소</button><button value="default" class="primary-button">작품 설계 시작 <i data-lucide="arrow-right"></i></button></div>
+      </form>
+    </dialog>
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
