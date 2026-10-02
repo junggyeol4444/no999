@@ -9,6 +9,7 @@ from pathlib import Path
 from .database import Database
 from .services import NovelFactory
 from .orchestrator import EpisodeOrchestrator
+from .batch import BatchGenerator
 
 
 @dataclass
@@ -79,6 +80,10 @@ def run_self_test() -> DiagnosticReport:
             epub_path = factory.export_epub(novel["id"], root / "diagnostic.epub", "진단 작가")
             assert epub_path.read_bytes().startswith(b"PK")
             checks["epub"] = "EPUB 3 archive generated"
+            batch = BatchGenerator(factory, EpisodeOrchestrator(factory, DiagnosticGenerator()))
+            batch_result = batch.run(batch.create_job(novel["id"], 2, 2)["id"])
+            assert batch_result.job["status"] == "COMPLETED"
+            checks["batch"] = "durable sequential generation completed"
         return DiagnosticReport(True, checks)
     except Exception as exc:
         return DiagnosticReport(False, checks, f"{type(exc).__name__}: {exc}")

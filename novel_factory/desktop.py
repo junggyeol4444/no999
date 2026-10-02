@@ -14,6 +14,7 @@ from .database import Database
 from .services import NovelFactory
 from .llm import CompatibleChatProvider
 from .orchestrator import EpisodeOrchestrator
+from .batch import BatchGenerator
 
 
 COLORS = {
@@ -35,6 +36,7 @@ class NovelFactoryApp(tk.Tk):
         self.ai_endpoint = settings.llm_endpoint
         self.ai_model = settings.llm_model
         self.ai_key = os.getenv("NOVEL_FACTORY_API_KEY", "")
+        self.active_batch: BatchGenerator | None = None
         self.selected_novel_id: str | None = None
         self._jobs: queue.Queue[tuple[Callable[[], Any], Callable[[Any], None]]] = queue.Queue()
         self.title("AI Novel Factory")
@@ -76,6 +78,7 @@ class NovelFactoryApp(tk.Tk):
             ("▦  대시보드", self.show_dashboard), ("▤  작품 관리", self.show_novels),
             ("◫  참고소설 분석", self.show_references), ("♙  캐릭터·기억", self.show_memory),
             ("✎  회차 제작", self.show_episodes), ("✓  품질 검사", self.show_quality),
+            ("▶  연속 자동 제작", self.show_batch),
             ("↥  EPUB·출판", self.show_publishing),
         ]
         for text, command in navigation:
@@ -272,6 +275,69 @@ class NovelFactoryApp(tk.Tk):
             messagebox.showinfo("EPUB 생성 완료", f"전자책을 저장했습니다.\n{output}")
         except Exception as exc:
             messagebox.showerror("EPUB 생성 실패", str(exc))
+
+    def show_batch(self) -> None:
+        self._clear("연속 자동 제작")
+        if not self._require_novel(): return
+        panel = self._panel(self.content, "회차 연속 생성", "선택 범위의 회차를 순서대로 기획·집필·검사하며 진행 상태를 DB에 저장합니다.")
+        panel.pack(fill="both", expand=True)
+        form = tk.Frame(panel, bg=COLORS["surface"]); form.pack(fill="x", padx=24, pady=20)
+        tk.Label(form, text="시작 회차", bg=COLORS["surface"]).pack(side="left")
+        start = ttk.Entry(form, width=8); start.insert(0, "1"); start.pack(side="left", padx=(8, 20))
+        tk.Label(form, text="종료 회차", bg=COLORS["surface"]).pack(side="left")
+        end = ttk.Entry(form, width=8); end.insert(0, "30"); end.pack(side="left", padx=8)
+        status = tk.Label(panel, text="대기 중", bg=COLORS["surface"], fg=COLORS["muted"], font=("Malgun Gothic", 11, "bold"))
+        status.pack(anchor="w", padx=24, pady=(10, 8))
+        progress = ttk.Progressbar(panel, maximum=100); progress.pack(fill="x", padx=24)
+        log = tk.Text(panel, height=14, wrap="word", relief="solid", borderwidth=1, font=("Malgun Gothic", 9))
+        log.pack(fill="both", expand=True, padx=24, pady=18)
+        controls = tk.Frame(panel, bg=COLORS["surface"]); controls.pack(fill="x", padx=24, pady=(0, 20))
+        self._button(controls, "AI 연결 설정", self._configure_ai, secondary=True).pack(side="left")
+        self._button(controls, "연속 생성 시작", lambda: self._start_batch(start, end, status, progress, log)).pack(side="right")
+        self._button(controls, "안전하게 중지", lambda: self._cancel_batch(log), secondary=True).pack(side="right", padx=8)
+
+    def _start_batch(self, start: ttk.Entry, end: ttk.Entry, status: tk.Label,
+                     progress: ttk.Progressbar, log: tk.Text) -> None:
+        if not self.ai_key:
+            self._configure_ai()
+        if not self.ai_key: return
+        try:
+            start_number, end_number = int(start.get()), int(end.get())
+            provider = CompatibleChatProvider(self.ai_key, self.ai_model, self.ai_endpoint)
+            worker = BatchGenerator(self.factory, EpisodeOrchestrator(self.factory, provider))
+            job = worker.create_job(self.selected_novel_id, start_number, end_number)
+            self.active_batch = worker
+        except Exception as exc:
+            messagebox.showerror("작업 생성 실패", str(exc)); return
+
+        def update(event: dict[str, Any]) -> None:
+            def apply(value: dict[str, Any]) -> None:
+                progress.config(value=value.get("percent", 0))
+                stage = value.get("stage", "")
+                episode = value.get("episode", "")
+                status.config(text=f"{episode}화 · {stage}" if episode else stage)
+                log.insert("end", f"{episode}화 {stage} {value.get('percent', 0)}%\n")
+                log.see("end")
+            self._jobs.put((lambda value=event: value, apply))
+
+        def finished(result: Any) -> None:
+            self.active_batch = None
+            if isinstance(result, Exception):
+                status.config(text="실패", fg=COLORS["danger"])
+                messagebox.showerror("연속 생성 실패", str(result)); return
+            status.config(text=f"{result.job['status']} · 생성 {len(result.generated)}화 · 건너뜀 {len(result.skipped)}화",
+                          fg=COLORS["success"] if result.job["status"] == "COMPLETED" else COLORS["warning"])
+
+        self._run_background(lambda: worker.run(job["id"], update), finished)
+
+    def _cancel_batch(self, log: tk.Text) -> None:
+        if not self.active_batch:
+            messagebox.showinfo("실행 작업 없음", "현재 실행 중인 연속 생성 작업이 없습니다.")
+            return
+        jobs = [job for job in self.active_batch.list_jobs(self.selected_novel_id) if job["status"] == "RUNNING"]
+        if jobs:
+            self.active_batch.cancel(jobs[0]["id"])
+            log.insert("end", "현재 회차 완료 후 안전하게 중지합니다.\n")
 
     def _panel(self, parent: tk.Widget, title: str, subtitle: str) -> tk.Frame:
         panel = tk.Frame(parent, bg=COLORS["surface"], highlightbackground=COLORS["line"], highlightthickness=1)

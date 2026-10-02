@@ -51,6 +51,13 @@ CREATE TABLE IF NOT EXISTS episodes (
   summary_json TEXT NOT NULL DEFAULT '{}', quality_json TEXT,
   status TEXT NOT NULL DEFAULT 'PLANNED', UNIQUE(novel_id, number)
 );
+CREATE TABLE IF NOT EXISTS generation_jobs (
+  id TEXT PRIMARY KEY, novel_id TEXT NOT NULL REFERENCES novels(id) ON DELETE CASCADE,
+  start_episode INTEGER NOT NULL, end_episode INTEGER NOT NULL, next_episode INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'QUEUED', completed_count INTEGER NOT NULL DEFAULT 0,
+  error TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 

@@ -11,4 +11,4 @@ def test_desktop_helpers_do_not_require_window():
 def test_packaged_application_self_test():
     report = run_self_test()
     assert report.passed, report.error
-    assert set(report.checks) == {"database", "reference_analysis", "memory", "episode_pipeline", "epub"}
+    assert set(report.checks) == {"database", "reference_analysis", "memory", "episode_pipeline", "epub", "batch"}
