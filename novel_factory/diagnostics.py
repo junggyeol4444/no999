@@ -76,6 +76,9 @@ def run_self_test() -> DiagnosticReport:
             assert episode["quality"]["passed"] is True
             assert factory.memory_context(novel["id"], 2)["open_foreshadowing"]
             checks["episode_pipeline"] = "AI plan, draft, quality check, finalization and retrieval passed"
+            epub_path = factory.export_epub(novel["id"], root / "diagnostic.epub", "진단 작가")
+            assert epub_path.read_bytes().startswith(b"PK")
+            checks["epub"] = "EPUB 3 archive generated"
         return DiagnosticReport(True, checks)
     except Exception as exc:
         return DiagnosticReport(False, checks, f"{type(exc).__name__}: {exc}")

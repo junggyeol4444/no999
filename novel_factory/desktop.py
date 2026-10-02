@@ -76,6 +76,7 @@ class NovelFactoryApp(tk.Tk):
             ("▦  대시보드", self.show_dashboard), ("▤  작품 관리", self.show_novels),
             ("◫  참고소설 분석", self.show_references), ("♙  캐릭터·기억", self.show_memory),
             ("✎  회차 제작", self.show_episodes), ("✓  품질 검사", self.show_quality),
+            ("↥  EPUB·출판", self.show_publishing),
         ]
         for text, command in navigation:
             button = tk.Button(self.sidebar, text=text, command=lambda c=command, b=None: c(), anchor="w",
@@ -234,6 +235,43 @@ class NovelFactoryApp(tk.Tk):
         result = tk.Label(panel, text="", justify="left", bg=COLORS["surface"], fg=COLORS["muted"], font=("Malgun Gothic", 9))
         result.pack(anchor="w", padx=24)
         self._button(panel, "검사 및 원고 확정", lambda: self._finalize(number, manuscript, result)).pack(anchor="e", padx=24, pady=16)
+
+    def show_publishing(self) -> None:
+        self._clear("EPUB·출판")
+        if not self._require_novel(): return
+        audit = self.factory.completion_audit(self.selected_novel_id)
+        panel = self._panel(self.content, "완결 검사", "EPUB 생성 전 누락 회차, 수정 필요 원고와 열린 복선을 확인합니다.")
+        panel.pack(fill="both", expand=True)
+        status_text = "완결 조건 통과" if audit["can_complete"] else "아직 완결할 수 없습니다"
+        status_color = COLORS["success"] if audit["can_complete"] else COLORS["warning"]
+        tk.Label(panel, text=status_text, bg=COLORS["surface"], fg=status_color,
+                 font=("Malgun Gothic", 17, "bold")).pack(anchor="w", padx=24, pady=(24, 5))
+        tk.Label(panel, text=f"확정 회차 {audit['final_episode_count']} / 목표 {audit['target_episode_count']}",
+                 bg=COLORS["surface"], fg=COLORS["muted"], font=("Malgun Gothic", 10)).pack(anchor="w", padx=24)
+        issue_box = tk.Text(panel, height=14, wrap="word", relief="solid", borderwidth=1, font=("Malgun Gothic", 9))
+        issue_box.pack(fill="both", expand=True, padx=24, pady=18)
+        if audit["issues"]:
+            names = {"MISSING_EPISODES": "누락된 확정 회차", "REVISION_REQUIRED": "수정 필요 회차", "OPEN_FORESHADOWING": "미회수 복선"}
+            for issue in audit["issues"]:
+                issue_box.insert("end", f"• {names.get(issue['type'], issue['type'])}: {issue['count']}건\n")
+        else:
+            issue_box.insert("end", "모든 회차와 복선 검사가 완료되었습니다.\n")
+        issue_box.config(state="disabled")
+        controls = tk.Frame(panel, bg=COLORS["surface"]); controls.pack(fill="x", padx=24, pady=(0, 22))
+        tk.Label(controls, text="저자명", bg=COLORS["surface"], fg=COLORS["text"]).pack(side="left")
+        author = ttk.Entry(controls, width=24); author.insert(0, "AI Novel Factory"); author.pack(side="left", padx=8)
+        self._button(controls, "EPUB 내보내기", lambda: self._export_epub(author.get().strip())).pack(side="right")
+
+    def _export_epub(self, author: str) -> None:
+        novel = self.factory.get_novel(self.selected_novel_id)
+        path = filedialog.asksaveasfilename(title="EPUB 저장", initialfile=f"{novel['title']}.epub",
+                                            defaultextension=".epub", filetypes=[("EPUB 전자책", "*.epub")])
+        if not path: return
+        try:
+            output = self.factory.export_epub(self.selected_novel_id, path, author or "AI Novel Factory")
+            messagebox.showinfo("EPUB 생성 완료", f"전자책을 저장했습니다.\n{output}")
+        except Exception as exc:
+            messagebox.showerror("EPUB 생성 실패", str(exc))
 
     def _panel(self, parent: tk.Widget, title: str, subtitle: str) -> tk.Frame:
         panel = tk.Frame(parent, bg=COLORS["surface"], highlightbackground=COLORS["line"], highlightthickness=1)

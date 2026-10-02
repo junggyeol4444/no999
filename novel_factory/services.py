@@ -9,6 +9,7 @@ from typing import Any
 from .database import Database
 from .quality import QualityPipeline
 from .reference import ReferenceAnalyzer, extract_text
+from .epub import EpubChapter, build_epub
 
 
 def new_id(prefix: str) -> str:
@@ -189,6 +190,38 @@ class NovelFactory:
             raw = episode.pop(source)
             episode[target] = json.loads(raw) if raw else None
         return episode
+
+    def list_episodes(self, novel_id: str) -> list[dict[str, Any]]:
+        self._required("novels", novel_id)
+        rows = self.db.fetch_all("SELECT number FROM episodes WHERE novel_id=? ORDER BY number", (novel_id,))
+        return [self.get_episode(novel_id, row["number"]) for row in rows]
+
+    def completion_audit(self, novel_id: str) -> dict[str, Any]:
+        novel = self.get_novel(novel_id)
+        episodes = self.list_episodes(novel_id)
+        open_foreshadowing = self.db.fetch_all(
+            "SELECT id,setup_episode,planned_payoff,description,status FROM foreshadowing "
+            "WHERE novel_id=? AND status IN ('OPEN','DEVELOPING') ORDER BY setup_episode", (novel_id,)
+        )
+        missing = [number for number in range(1, novel["target_episodes"] + 1)
+                   if number not in {episode["number"] for episode in episodes if episode["status"] == "FINAL"}]
+        revision = [episode["number"] for episode in episodes if episode["status"] == "REVISION_REQUIRED"]
+        issues = []
+        if missing:
+            issues.append({"type": "MISSING_EPISODES", "count": len(missing), "episodes": missing[:100]})
+        if revision:
+            issues.append({"type": "REVISION_REQUIRED", "count": len(revision), "episodes": revision})
+        if open_foreshadowing:
+            issues.append({"type": "OPEN_FORESHADOWING", "count": len(open_foreshadowing), "items": open_foreshadowing})
+        return {"can_complete": not issues, "issues": issues, "final_episode_count": sum(e["status"] == "FINAL" for e in episodes),
+                "target_episode_count": novel["target_episodes"]}
+
+    def export_epub(self, novel_id: str, destination: str | Path, author: str = "AI Novel Factory") -> Path:
+        novel = self.get_novel(novel_id)
+        chapters = [EpubChapter(episode["number"], episode["title"], episode["final_text"])
+                    for episode in self.list_episodes(novel_id) if episode["status"] == "FINAL" and episode["final_text"].strip()]
+        return build_epub(destination, title=novel["title"], author=author, language="ko",
+                          description=novel["premise"], chapters=chapters)
 
     def memory_context(self, novel_id: str, episode_number: int) -> dict[str, Any]:
         novel = self.get_novel(novel_id)
