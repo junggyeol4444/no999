@@ -2,7 +2,9 @@ name: Build Windows EXE
 
 on:
   workflow_dispatch:
+  pull_request:
   push:
+    branches: ["main", "work"]
     tags: ["v*"]
 
 jobs:
@@ -19,6 +21,11 @@ jobs:
         run: pytest -q
       - name: Build executable
         run: pyinstaller --noconfirm --clean "AI_Novel_Factory.spec"
+      - name: Verify packaged executable
+        shell: pwsh
+        run: |
+          & "dist/AI Novel Factory.exe" --self-test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
         with:
           name: AI-Novel-Factory-Windows

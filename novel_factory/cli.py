@@ -7,6 +7,7 @@ from pathlib import Path
 from .config import Settings
 from .database import Database
 from .services import NovelFactory
+from .diagnostics import run_self_test
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -23,6 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
     novel.add_argument("--episodes", type=int, default=250)
     commands.add_parser("list", help="등록된 작품과 참고소설을 표시합니다")
     commands.add_parser("desktop", help="데스크톱 프로그램을 실행합니다")
+    commands.add_parser("self-test", help="DB·분석·메모리·회차 파이프라인을 진단합니다")
     return parser
 
 
@@ -40,11 +42,14 @@ def main() -> None:
                                        "target_episodes": args.episodes, "characters_per_episode": 5000})
     elif args.command == "list":
         output = {"novels": factory.list_novels(), "references": factory.list_references()}
-    else:
+    elif args.command == "desktop":
         from .desktop import main as desktop_main
         desktop_main(factory=factory)
         return
-        return
+    else:
+        report = run_self_test()
+        print(report.to_json())
+        raise SystemExit(0 if report.passed else 1)
     print(json.dumps(output, ensure_ascii=False, indent=2))
 
 
