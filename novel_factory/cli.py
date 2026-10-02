@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
     novel.add_argument("--premise", required=True)
     novel.add_argument("--episodes", type=int, default=250)
     commands.add_parser("list", help="등록된 작품과 참고소설을 표시합니다")
-    commands.add_parser("serve", help="API와 관리자 화면을 실행합니다").add_argument("--port", type=int, default=8000)
+    commands.add_parser("desktop", help="데스크톱 프로그램을 실행합니다")
     return parser
 
 
@@ -41,17 +41,12 @@ def main() -> None:
     elif args.command == "list":
         output = {"novels": factory.list_novels(), "references": factory.list_references()}
     else:
-        try:
-            import uvicorn
-        except ImportError as exc:
-            raise SystemExit("서버 실행 의존성을 설치하세요: pip install -e .") from exc
-        import os
-        os.environ["NOVEL_FACTORY_DATA"] = str(base)
-        uvicorn.run("novel_factory.api:app", host="127.0.0.1", port=args.port, reload=False)
+        from .desktop import main as desktop_main
+        desktop_main(factory=factory)
+        return
         return
     print(json.dumps(output, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
     main()
-

@@ -7,19 +7,16 @@ name = "ai-novel-factory"
 version = "0.1.0"
 description = "Long-form novel planning, reference analysis, memory and quality pipeline"
 requires-python = ">=3.11"
-dependencies = [
-  "fastapi>=0.115,<1",
-  "pydantic>=2.9,<3",
-  "python-multipart>=0.0.12",
-  "uvicorn[standard]>=0.30,<1",
-]
+dependencies = []
 
 [project.optional-dependencies]
 documents = ["pypdf>=5.0,<6"]
-dev = ["httpx>=0.27,<1", "pytest>=8,<10"]
+dev = ["pytest>=8,<10"]
+build = ["pyinstaller>=6.10,<7"]
 
 [project.scripts]
 novel-factory = "novel_factory.cli:main"
+novel-factory-desktop = "novel_factory.desktop:main"
 
 [tool.setuptools.packages.find]
 include = ["novel_factory*"]

@@ -1,102 +1,93 @@
-# AI Novel Factory
+# AI Novel Factory — Windows 데스크톱 프로그램
 
-장편소설의 참고작 **구조 분석**, Novel Bible과 장기 기억 관리, 회차 설계, 유사성·반복 표현 검사까지 실행하는 백엔드 MVP입니다. 단순 화면 목업이 아니라 SQLite에 데이터를 영속화하고 API와 CLI에서 동일한 제작 엔진을 사용합니다.
+이 프로젝트는 웹사이트가 아닙니다. Windows에서 독립 실행되는 **`AI Novel Factory.exe` 데스크톱 프로그램**입니다. 데이터는 사용자의 PC에 있는 SQLite 파일로 저장되며 브라우저나 웹 서버를 사용하지 않습니다.
 
-## 현재 구현 범위
+## 프로그램에서 할 수 있는 일
 
-- TXT·Markdown·DOCX·EPUB 텍스트 추출(PDF는 `documents` 옵션 설치 시 지원)
-- 회차 자동 분리와 분량·문장·문단·대사 비율·속도·클리프행어 통계 분석
-- Reference Profile 영속화와 작품별/항목별 참고 강도 설정
-- Novel Bible, Character Knowledge, Timeline, Foreshadowing, Episode DB
-- 회차 플래너 및 Writer용 검색 컨텍스트(최근 요약·인물·타임라인·열린 복선)
-- 반복 문장, 분량, 대사 비율, 참고작 구문 유사성을 검사하는 품질 파이프라인
-- FastAPI REST API, Swagger 문서, 관리 대시보드, 의존성 없는 관리 CLI
+- TXT, Markdown, DOCX, EPUB, PDF 참고소설 가져오기
+- 참고소설 회차 분리 및 문장·문단·대사·전개 속도·클리프행어 분석
+- Reference Profile 확인
+- 새 장편 프로젝트와 Novel Bible 생성
+- 캐릭터의 성격·말투·목표·인물별 지식 저장
+- 작품 내부 타임라인과 복선 설치/회수 계획 관리
+- 회차 목적, 등장인물, 갈등, 마지막 Hook 설계
+- 완성 원고의 분량, 반복 표현, 대사 비율, 참고작 유사성 검사
+- 다음 회차 집필에 필요한 Novel Bible, 최근 요약, 캐릭터, 관계, 타임라인과 열린 복선 검색
 
-LLM 호출은 특정 공급자에 종속되지 않도록 아직 어댑터 경계 밖에 두었습니다. 현재 MVP는 생성 모델에 전달할 정확한 컨텍스트를 만들고 결과물을 검수·저장하는 기반 계층입니다.
+모든 핵심 데이터는 Windows의 `%LOCALAPPDATA%\AI Novel Factory\`에 저장됩니다.
 
-## 빠른 시작
+## Windows EXE 만들기
 
-Python 3.11 이상이 필요합니다.
+### 가장 간단한 방법
+
+Python 3.11 이상을 설치한 Windows PC에서 다음 파일을 더블 클릭합니다.
+
+```text
+build_windows.bat
+```
+
+빌드가 완료되면 아래 파일이 생성됩니다.
+
+```text
+dist\AI Novel Factory.exe
+```
+
+생성된 EXE는 Python 명령이나 웹 서버 없이 더블 클릭해서 실행할 수 있습니다.
+
+### 명령 프롬프트에서 직접 빌드
+
+```bat
+py -3 -m venv .venv-build
+.venv-build\Scripts\activate
+pip install -e ".[build,documents]"
+pyinstaller --noconfirm --clean "AI_Novel_Factory.spec"
+```
+
+PyInstaller는 실행 중인 운영체제용 실행 파일을 만들기 때문에 Windows EXE는 Windows 환경에서 빌드해야 합니다. 저장소의 GitHub Actions 워크플로도 `windows-latest`에서 동일한 EXE를 빌드하여 아티팩트로 제공합니다.
+
+## 소스에서 바로 실행
+
+Windows에서는 `run_desktop.bat`을 더블 클릭하거나 다음 명령을 실행합니다.
+
+```bat
+py -3 -m novel_factory.desktop
+```
+
+Linux/macOS 개발 환경에서는 다음과 같이 실행할 수 있습니다.
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e '.[documents,dev]'
-novel-factory serve --port 8000
+python3 -m novel_factory.desktop
 ```
 
-- 관리자 화면: <http://127.0.0.1:8000>
-- Swagger API: <http://127.0.0.1:8000/docs>
-- 상태 확인: <http://127.0.0.1:8000/api/health>
+## 화면 구성
 
-데이터는 기본적으로 `./data/novel_factory.db`와 `./data/uploads/`에 저장됩니다. `NOVEL_FACTORY_DATA` 환경 변수 또는 CLI의 `--data-dir`로 위치를 바꿀 수 있습니다.
+1. **대시보드** — 작품과 참고소설 현황, 빠른 시작
+2. **작품 관리** — Novel Bible 프로젝트 생성 및 선택
+3. **참고소설 분석** — 파일 가져오기, 분석 실행, Reference Profile 확인
+4. **캐릭터·기억** — 인물 지식, 타임라인, 복선 데이터 등록
+5. **회차 제작** — Episode Planner 작성
+6. **품질 검사** — 원고 확정 전 반복·유사성·문체 검사
 
-## 의존성 없이 분석 엔진 실행
+## CLI 자동화
 
-FastAPI를 설치하지 않아도 Python 표준 라이브러리만으로 TXT·Markdown·DOCX·EPUB 분석과 저장을 실행할 수 있습니다.
+화면 없이 참고소설 분석 작업을 자동화할 때만 CLI를 사용할 수 있습니다.
 
 ```bash
-python -m novel_factory.cli --data-dir ./data analyze ./my-novel.txt --title "참고 작품"
-python -m novel_factory.cli --data-dir ./data create-novel "새 작품" \
-  --genre 현대판타지 --premise "회귀한 인수 전문가가 부실기업을 재건한다" --episodes 250
-python -m novel_factory.cli --data-dir ./data list
-```
-
-## 핵심 API
-
-| Method | Path | 역할 |
-|---|---|---|
-| `POST` | `/api/references` | 참고소설 파일 등록 |
-| `POST` | `/api/references/{id}/analyze` | Reference Profile 생성 |
-| `POST` | `/api/novels` | 작품과 Novel Bible 생성 |
-| `POST` | `/api/novels/{id}/references` | 참고작과 항목별 강도 연결 |
-| `POST` | `/api/novels/{id}/characters` | 인물·지식·관계 정보 저장 |
-| `POST` | `/api/novels/{id}/foreshadowing` | 복선 설치/회수 계획 저장 |
-| `POST` | `/api/novels/{id}/timeline` | 작품 내부 시간선 사건 저장 |
-| `POST` | `/api/novels/{id}/relationships` | 회차별 인물 관계 변화 저장 |
-| `POST` | `/api/novels/{id}/episodes/{no}/plan` | 회차 플롯과 Scene 계획 저장 |
-| `PUT` | `/api/novels/{id}/episodes/{no}/finalize` | 원고 품질 검사 및 확정 |
-| `GET` | `/api/novels/{id}/episodes/{no}/context` | Writer용 장기 기억 컨텍스트 검색 |
-
-### 작품 생성 예시
-
-```json
-{
-  "title": "회귀한 CFO는 재벌을 꿈꾼다",
-  "genre": "현대판타지",
-  "premise": "회귀한 기업 인수 전문가가 과거의 실패를 바로잡는다.",
-  "target_episodes": 250,
-  "characters_per_episode": 5000,
-  "core_material": ["회귀", "기업경영"],
-  "atmosphere": "빠르고 지적인 성장물"
-}
-```
-
-### 참고 강도 연결 예시
-
-```json
-{
-  "reference_id": "REF_xxxxxxxxxxxx",
-  "weights": {
-    "pacing": 0.8,
-    "cliffhanger": 0.7,
-    "character_structure": 0.3,
-    "style": 0
-  }
-}
+python -m novel_factory.cli analyze reference.txt --title "참고 작품"
+python -m novel_factory.cli create-novel "새 작품" --genre 현대판타지 \
+  --premise "회귀한 인수 전문가가 부실기업을 재건한다" --episodes 250
+python -m novel_factory.cli list
 ```
 
 ## 테스트
 
 ```bash
 pytest -q
+python -m compileall -q novel_factory
 ```
 
-테스트는 참고작 분석과 등록 → 분석 → Novel Bible → 참고작 연결 → 인물·복선 → 회차 계획 → 품질 검사 → 장기 기억 검색의 실제 워크플로를 임시 SQLite DB에서 검증합니다.
+통합 테스트는 임시 SQLite 데이터베이스에서 참고작 등록 → 구조 분석 → Novel Bible 생성 → 캐릭터·관계·타임라인·복선 등록 → 회차 계획 → 원고 품질 검사 → 장기 기억 검색의 실제 흐름을 검증합니다.
 
-## 저작권·유사성 원칙
+## 현재 MVP 범위
 
-- 참고작 원문은 Writer 컨텍스트로 전달하지 않습니다.
-- 참고작 연결에는 `pacing`, `cliffhanger`, `foreshadowing` 같은 구조 항목만 허용합니다.
-- 완성 원고는 연결된 모든 참고작에 대해 구문 유사성 검사를 통과해야 합니다.
-- 작품 고유의 Novel Bible이 Reference Profile보다 항상 우선합니다.
+현재 버전은 참고작 분석, 작품 메모리, 회차 설계와 품질 검사를 완전히 로컬에서 실행합니다. 실제 AI 원고 생성 모델 연결은 API 키 및 공급자 선택이 필요한 다음 단계이며, 특정 AI 서비스에 종속되지 않도록 핵심 프로그램과 분리되어 있습니다.
