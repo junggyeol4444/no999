@@ -11,6 +11,8 @@ class Settings:
     data_dir: Path
     database_path: Path
     upload_dir: Path
+    llm_endpoint: str = "https://api.openai.com/v1/chat/completions"
+    llm_model: str = "gpt-4o-mini"
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -24,6 +26,8 @@ class Settings:
             data_dir=data_dir,
             database_path=data_dir / "novel_factory.db",
             upload_dir=data_dir / "uploads",
+            llm_endpoint=os.getenv("NOVEL_FACTORY_LLM_ENDPOINT", "https://api.openai.com/v1/chat/completions"),
+            llm_model=os.getenv("NOVEL_FACTORY_LLM_MODEL", "gpt-4o-mini"),
         )
 
     def ensure_directories(self) -> None:

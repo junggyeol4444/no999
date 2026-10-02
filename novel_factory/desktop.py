@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import queue
 import threading
 import tkinter as tk
@@ -11,6 +12,8 @@ from typing import Any, Callable
 from .config import Settings
 from .database import Database
 from .services import NovelFactory
+from .llm import CompatibleChatProvider
+from .orchestrator import EpisodeOrchestrator
 
 
 COLORS = {
@@ -28,6 +31,10 @@ class NovelFactoryApp(tk.Tk):
             settings.ensure_directories()
             factory = NovelFactory(Database(settings.database_path), settings.upload_dir)
         self.factory = factory
+        settings = Settings.from_env()
+        self.ai_endpoint = settings.llm_endpoint
+        self.ai_model = settings.llm_model
+        self.ai_key = os.getenv("NOVEL_FACTORY_API_KEY", "")
         self.selected_novel_id: str | None = None
         self._jobs: queue.Queue[tuple[Callable[[], Any], Callable[[Any], None]]] = queue.Queue()
         self.title("AI Novel Factory")
@@ -209,6 +216,10 @@ class NovelFactoryApp(tk.Tk):
             entry = ttk.Entry(form, width=70); entry.grid(row=row, column=1, sticky="ew", padx=(0, 25), pady=9); entries[key] = entry
         form.columnconfigure(1, weight=1)
         self._button(form, "회차 계획 저장", lambda: self._save_episode(entries)).grid(row=7, column=1, sticky="e", padx=25, pady=20)
+        ai_actions = tk.Frame(form, bg=COLORS["surface"])
+        ai_actions.grid(row=8, column=1, sticky="e", padx=25, pady=(0, 20))
+        self._button(ai_actions, "AI 연결 설정", self._configure_ai, secondary=True).pack(side="left", padx=(0, 8))
+        self._button(ai_actions, "AI로 이 회차 자동 제작", lambda: self._generate_episode(entries)).pack(side="left")
 
     def show_quality(self) -> None:
         self._clear("품질 검사")
@@ -333,6 +344,79 @@ class NovelFactoryApp(tk.Tk):
                 "characters": self._csv(values["characters"]), "conflict": values["conflict"], "hook": values["hook"]})
             messagebox.showinfo("저장 완료", f"{values['number']}화 계획을 저장했습니다.")
         except Exception as exc: messagebox.showerror("저장 실패", str(exc))
+
+    def _configure_ai(self) -> None:
+        dialog = tk.Toplevel(self)
+        dialog.title("AI 연결 설정")
+        dialog.configure(bg=COLORS["surface"])
+        dialog.transient(self)
+        dialog.grab_set()
+        values = (("endpoint", "호환 API 주소", self.ai_endpoint, False),
+                  ("model", "모델", self.ai_model, False), ("key", "API 키", self.ai_key, True))
+        entries: dict[str, ttk.Entry] = {}
+        for row, (name, label, value, secret) in enumerate(values):
+            tk.Label(dialog, text=label, bg=COLORS["surface"], fg=COLORS["text"],
+                     font=("Malgun Gothic", 9)).grid(row=row, column=0, sticky="w", padx=20, pady=10)
+            entry = ttk.Entry(dialog, width=62, show="*" if secret else "")
+            entry.insert(0, value)
+            entry.grid(row=row, column=1, padx=20, pady=10)
+            entries[name] = entry
+
+        def save() -> None:
+            self.ai_endpoint = entries["endpoint"].get().strip()
+            self.ai_model = entries["model"].get().strip()
+            self.ai_key = entries["key"].get().strip()
+            if not all((self.ai_endpoint, self.ai_model, self.ai_key)):
+                messagebox.showwarning("필수 입력", "API 주소, 모델과 API 키를 모두 입력하세요.", parent=dialog)
+                return
+            dialog.destroy()
+            messagebox.showinfo("설정 완료", "API 키는 현재 실행 중인 메모리에만 보관되며 파일로 저장하지 않습니다.")
+
+        self._button(dialog, "설정 적용", save).grid(row=len(values), column=1, sticky="e", padx=20, pady=18)
+        dialog.wait_window()
+
+    def _generate_episode(self, entries: dict[str, ttk.Entry]) -> None:
+        if not self.ai_key:
+            self._configure_ai()
+        if not self.ai_key:
+            return
+        try:
+            number = int(entries["number"].get().strip())
+        except ValueError:
+            messagebox.showerror("입력 오류", "자동 제작할 회차 번호를 입력하세요.")
+            return
+        progress_window = tk.Toplevel(self)
+        progress_window.title("AI 회차 제작")
+        progress_window.geometry("430x145")
+        progress_window.configure(bg=COLORS["surface"])
+        progress_window.transient(self)
+        status = tk.Label(progress_window, text="컨텍스트를 준비하고 있습니다...", bg=COLORS["surface"],
+                          fg=COLORS["text"], font=("Malgun Gothic", 10))
+        status.pack(pady=(25, 12))
+        bar = ttk.Progressbar(progress_window, maximum=100, length=350)
+        bar.pack()
+
+        def update(stage: str, percent: int) -> None:
+            def apply_progress(value: tuple[str, int]) -> None:
+                current_stage, current_percent = value
+                if progress_window.winfo_exists():
+                    status.config(text=current_stage)
+                    bar.config(value=current_percent)
+            self._jobs.put((lambda s=stage, p=percent: (s, p), apply_progress))
+
+        provider = CompatibleChatProvider(self.ai_key, self.ai_model, self.ai_endpoint)
+        orchestrator = EpisodeOrchestrator(self.factory, provider)
+
+        def finished(result: Any) -> None:
+            progress_window.destroy()
+            if isinstance(result, Exception):
+                messagebox.showerror("자동 제작 실패", str(result))
+                return
+            episode = result.episode
+            report = episode["quality"]
+            messagebox.showinfo("자동 제작 완료", f"{number}화 · 상태 {episode['status']} · 품질 {report['score']:.0f}점\nAI 호출 {result.attempts + 1}회")
+
+        self._run_background(lambda: orchestrator.generate_episode(self.selected_novel_id, number, update), finished)
 
     def _finalize(self, number: ttk.Entry, manuscript: tk.Text, result: tk.Label) -> None:
         try:

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .database import Database
 from .services import NovelFactory
+from .orchestrator import EpisodeOrchestrator
 
 
 @dataclass
@@ -58,15 +59,23 @@ def run_self_test() -> DiagnosticReport:
             factory.add_foreshadowing(novel["id"], {"setup_episode": 1, "description": "검은 수첩", "planned_payoff": 8})
             checks["memory"] = "bible, character, timeline and foreshadowing stored"
 
-            factory.plan_episode(novel["id"], 1, {
-                "purpose": "주인공 능력 증명", "characters": ["김도윤"], "hook": "수첩 발견",
-            })
-            manuscript = "김도윤은 계약서를 펼쳤다. " + "이번 선택으로 실패한 미래를 바꿀 수 있었다. " * 15
-            episode = factory.finalize_episode(novel["id"], 1, manuscript)
+            class DiagnosticGenerator:
+                calls = 0
+
+                def generate(self, system: str, user: str, *, temperature: float = 0.7) -> str:
+                    self.calls += 1
+                    if self.calls == 1:
+                        return json.dumps({"title": "첫 계약", "purpose": "주인공 능력 증명",
+                            "required_events": ["계약"], "characters": ["김도윤"], "emotion_flow": ["불안", "확신"],
+                            "foreshadowing": ["검은 수첩"], "reward": "첫 성과", "conflict": "정보 부족",
+                            "hook": "수첩 발견", "scenes": []}, ensure_ascii=False)
+                    return "김도윤은 계약서를 펼쳤다. " + "이번 선택으로 실패한 미래를 바꿀 수 있었다. " * 15
+
+            generated = EpisodeOrchestrator(factory, DiagnosticGenerator()).generate_episode(novel["id"], 1)
+            episode = generated.episode
             assert episode["quality"]["passed"] is True
             assert factory.memory_context(novel["id"], 2)["open_foreshadowing"]
-            checks["episode_pipeline"] = "plan, quality check, finalization and retrieval passed"
+            checks["episode_pipeline"] = "AI plan, draft, quality check, finalization and retrieval passed"
         return DiagnosticReport(True, checks)
     except Exception as exc:
         return DiagnosticReport(False, checks, f"{type(exc).__name__}: {exc}")
-

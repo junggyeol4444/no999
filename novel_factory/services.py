@@ -64,7 +64,8 @@ class NovelFactory:
             "core_material": data.get("core_material", []), "atmosphere": data.get("atmosphere", ""),
             "point_of_view": data.get("point_of_view", "3인칭 제한"),
             "target_audience": data.get("target_audience", "웹소설 독자"),
-            "target_episodes": data["target_episodes"], "ending": data.get("ending", ""),
+            "target_episodes": data["target_episodes"],
+            "characters_per_episode": data.get("characters_per_episode", 5000), "ending": data.get("ending", ""),
         }
         self.db.execute(
             "INSERT INTO novels(id,title,genre,premise,target_episodes,characters_per_episode,atmosphere,bible_json) VALUES(?,?,?,?,?,?,?,?)",
@@ -85,6 +86,16 @@ class NovelFactory:
 
     def list_novels(self) -> list[dict[str, Any]]:
         return [self.get_novel(row["id"]) for row in self.db.fetch_all("SELECT id FROM novels ORDER BY created_at DESC")]
+
+    def reference_profiles(self, novel_id: str) -> list[dict[str, Any]]:
+        """Return only structural profiles and weights, never reference prose."""
+        rows = self.db.fetch_all(
+            "SELECT r.id,r.title,r.profile_json,nr.weights_json FROM reference_works r "
+            "JOIN novel_references nr ON nr.reference_id=r.id WHERE nr.novel_id=? AND r.status='ANALYZED'",
+            (novel_id,),
+        )
+        return [{"reference_id": row["id"], "title": row["title"], "profile": json.loads(row["profile_json"]),
+                 "weights": json.loads(row["weights_json"])} for row in rows]
 
     def link_reference(self, novel_id: str, reference_id: str, weights: dict[str, float]) -> None:
         self._required("novels", novel_id)
