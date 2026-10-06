@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-novel-factory"
+version = "0.1.0"
+description = "Long-form novel planning, reference analysis, memory and quality pipeline"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+documents = ["pypdf>=5.0,<6"]
+dev = ["pytest>=8,<10"]
+build = ["pyinstaller>=6.10,<7"]
+
+[project.scripts]
+novel-factory = "novel_factory.cli:main"
+novel-factory-desktop = "novel_factory.desktop:main"
+
+[tool.setuptools.packages.find]
+include = ["novel_factory*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
